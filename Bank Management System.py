@@ -1,4 +1,4 @@
-# Bank Management System with PIN Authentication
+# Bank Management System
 # Author: Muhammad Abdullah Farooq
 # Language: Python
 
@@ -18,7 +18,6 @@ class BankAccount:
         return self.__balance
 
     def verify_pin(self, input_pin):
-        # Direct string equality — crash-proof
         return str(input_pin) == self.__pin
 
     def deposit(self, amount):
@@ -34,7 +33,11 @@ class BankAccount:
         self.__balance -= amount
 
     def __str__(self):
-        return f"Account Holder: {self.holder_name}\nAccount Number: {self.account_number}\nBalance: {self.__balance:.2f}"
+        return (
+            f"Account Holder: {self.holder_name}\n"
+            f"Account Number: {self.account_number}\n"
+            f"Balance       : {self.__balance:.2f}"
+        )
 
     def to_dict(self):
         return {
@@ -50,8 +53,9 @@ class BankAccount:
             holder_name=account_data["Holder_name"],
             account_number=account_data["Account_number"],
             balance=account_data["Balance"],
-            pin=str(account_data.get("PIN", "1234"))  # Default '1234' if missing
+            pin=str(account_data.get("PIN", "1234"))
         )
+
 
 class BankManager:
     def __init__(self, filename="accounts.json"):
@@ -141,7 +145,6 @@ class BankManager:
 
         pin = input("Set a 4-digit PIN: ").strip()
 
-        # Check if PIN is exactly 4 numbers
         if len(pin) != 4 or not pin.isdigit():
             print("Invalid PIN! PIN must contain exactly 4 numeric digits (e.g., 1234).")
             return
@@ -150,18 +153,44 @@ class BankManager:
         self.save_accounts()
         print("New Account Created Successfully!")
 
-    def view_account(self):
+    def view_accounts(self):
         if not self.accounts:
             print("No accounts available.")
             return
 
-        print("-" * 51)
-        print("\n--- ALL ACCOUNTS (PUBLIC / MASKED VIEW) ---")
+        print("\n--- ALL ACCOUNTS DIRECTORY ---")
         for account in self.accounts:
             print("-" * 51)
-            print("Name:", account.holder_name)
+            print("Name          :", account.holder_name)
             print("Account Number:", account.account_number)
-            print("Balance: **** (Hidden for Privacy)")
+            print("Balance       : [Hidden - Requires PIN Authentication]")
+            print("-" * 51)
+
+    def search_account(self):
+        if not self.accounts:
+            print("No accounts available in system.")
+            return
+
+        query = input("Enter Account Number or Holder Name to Search: ").strip()
+        if not query:
+            print("Search input cannot be empty!")
+            return
+
+        matches = []
+        for account in self.accounts:
+            if query == str(account.account_number) or query.lower() in account.holder_name.lower():
+                matches.append(account)
+
+        if not matches:
+            print("No matching account found!")
+            return
+
+        print(f"\n--- SEARCH RESULTS ({len(matches)} Found) ---")
+        for account in matches:
+            print("-" * 51)
+            print("Name          :", account.holder_name)
+            print("Account Number:", account.account_number)
+            print("Balance       : [Hidden - Requires PIN Authentication]")
             print("-" * 51)
 
     def deposit_money(self):
@@ -193,6 +222,8 @@ class BankManager:
 
         self.save_accounts()
         print("Money Deposited Successfully!")
+        print("\nUpdated Account Details:")
+        print(account)
 
     def withdraw_money(self):
         try:
@@ -223,6 +254,8 @@ class BankManager:
 
         self.save_accounts()
         print("Money Withdrawn Successfully!")
+        print("\nUpdated Account Details:")
+        print(account)
 
     def check_balance(self):
         try:
@@ -240,8 +273,8 @@ class BankManager:
             return
 
         print("-" * 60)
-        print("Account Found Successfully!")
-        print(f"The Balance is: {account.balance:.2f}")
+        print("Account Found Successfully!\n")
+        print(account)
         print("-" * 60)
 
     def delete_account(self):
@@ -268,6 +301,7 @@ class BankManager:
         self.save_accounts()
         print("Account Deleted Successfully!")
 
+
 def main():
     print("============ Welcome to Bank Management System =============")
     bank = BankManager()
@@ -275,16 +309,16 @@ def main():
     while True:
         print("\n=============== Select Option ===============")
         print("1. Create Account")
-        print("2. View Accounts")
-        print("3. Deposit Money")
-        print("4. Withdraw Money")
-        print("5. Check Balance")
-        print("6. Delete Account")
+        print("2. View All Accounts")
+        print("3. Search Account")
+        print("4. Deposit Money")
+        print("5. Withdraw Money")
+        print("6. Check Balance")
+        print("7. Delete Account")
         print("0. Exit")
-        print("===============================================")
 
         try:
-            choice = int(input("Enter option (0-6): "))
+            choice = int(input("Enter option (0-7): "))
         except ValueError:
             print("Invalid Number!")
             continue
@@ -292,14 +326,16 @@ def main():
         if choice == 1:
             bank.create_account()
         elif choice == 2:
-            bank.view_account()
+            bank.view_accounts()
         elif choice == 3:
-            bank.deposit_money()
+            bank.search_account()
         elif choice == 4:
-            bank.withdraw_money()
+            bank.deposit_money()
         elif choice == 5:
-            bank.check_balance()
+            bank.withdraw_money()
         elif choice == 6:
+            bank.check_balance()
+        elif choice == 7:
             bank.delete_account()
         elif choice == 0:
             print("============ Exiting Application =============")
@@ -309,5 +345,6 @@ def main():
             sys.exit()
         else:
             print("Invalid Choice!")
+
 
 main()
