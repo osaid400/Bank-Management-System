@@ -7,7 +7,7 @@ class BankAccount:
         self.__balance = float(balance)
         self.name = name
         self.account_number = int(account_number)
-        self.account_type = account_type
+        self.account_type = str(account_type).strip().capitalize()
         self.loan_balance = float(loan_balance)
         self.pending_loan = float(pending_loan)
         self.checkbook_status = checkbook_status
@@ -43,6 +43,12 @@ class BankAccount:
             if tx.get("Date") == today and tx.get("Type") in ["Withdrawal", "Transfer Sent"]:
                 total += tx.get("Amount", 0.0)
         return total
+
+    def receive_loan_disbursement(self, amount):
+        self.check_active_status()
+        if amount <= 0:
+            raise ValueError("Disbursement amount must be positive.")
+        self.__balance += amount
 
     def calculate_interest(self, rate=0.05):
         if self.account_type != "Savings":
@@ -168,6 +174,7 @@ class BankAccount:
             cb_status = "Pending" if account_data.get("Checkbook_Requested") else "None"
 
         is_active = account_data.get("Is_Active", True)
+        raw_acc_type = account_data.get("Account_Type") or account_data.get("Account_type") or account_data.get("account_type", "Savings")
 
         if pin_hash:
             return cls(
@@ -175,7 +182,7 @@ class BankAccount:
                 account_number=account_data.get("Account_number") or account_data.get("Account Number") or account_data.get("account_number"),
                 balance=account_data.get("Balance") if account_data.get("Balance") is not None else account_data.get("balance", 0.0),
                 pin=pin_hash,
-                account_type=account_data.get("Account_Type") or account_data.get("Account_type") or account_data.get("account_type", "Savings"),
+                account_type=raw_acc_type,
                 loan_balance=account_data.get("Loan_Balance") if account_data.get("Loan_Balance") is not None else account_data.get("Loan_balance", 0.0),
                 pending_loan=account_data.get("Pending_Loan", 0.0),
                 transactions=account_data.get("Transactions") or account_data.get("transactions", []),
@@ -190,7 +197,7 @@ class BankAccount:
             account_number=account_data.get("Account_number") or account_data.get("Account Number") or account_data.get("account_number"),
             balance=account_data.get("Balance") if account_data.get("Balance") is not None else account_data.get("balance", 0.0),
             pin=raw_pin,
-            account_type=account_data.get("Account_Type") or account_data.get("Account_type") or account_data.get("account_type", "Savings"),
+            account_type=raw_acc_type,
             loan_balance=account_data.get("Loan_Balance") if account_data.get("Loan_Balance") is not None else account_data.get("Loan_balance", 0.0),
             pending_loan=account_data.get("Pending_Loan", 0.0),
             transactions=account_data.get("Transactions") or account_data.get("transactions", []),

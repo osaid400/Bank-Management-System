@@ -83,7 +83,7 @@ class BankManager:
         
         loan_amt = account.pending_loan
         account.loan_balance = loan_amt
-        account._BankAccount__balance += loan_amt
+        account.receive_loan_disbursement(loan_amt)
         account.pending_loan = 0.0
         account.record_transaction("Loan Approved", loan_amt)
         self.save_accounts()
@@ -166,6 +166,11 @@ class BankManager:
     def close_account(self, account):
         if account.balance != 0 or account.loan_balance != 0:
             raise ValueError("Account must have zero balance and no active loan to close.")
+        if account.pending_loan > 0:
+            raise ValueError("Cannot close account with a pending loan request.")
+        if account.checkbook_status == "Pending":
+            raise ValueError("Cannot close account with a pending checkbook request.")
+
         self.accounts.remove(account)
         self.save_accounts()
 
