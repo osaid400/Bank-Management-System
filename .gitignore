@@ -1,1 +1,23 @@
-accounts.json
+# Python / Environment virtual files
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+env/
+
+# IDE & Editor settings
+.vscode/
+.idea/
+
+# Ignore text receipts but keep .gitkeep files and folder structure
+receipts/**/*.txt
+!receipts/**/.gitkeep
+
+# Ignore local account data
+data/accounts.json
+
+# System generated files
+.DS_Store
+Thumbs.db
