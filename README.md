@@ -1,6 +1,6 @@
 # Bank Management System
 
-A console-based Bank Management System built with Python using Object-Oriented Programming (OOP) principles. Unlike a simple ATM simulator, this project models real banking operations — account opening, loans, checkbooks, interest, and admin oversight — with secure PIN hashing, JSON-based data persistence, and a modular package structure.
+A console-based Bank Management System built with Python using Object-Oriented Programming (OOP) principles. Unlike a simple ATM simulator, this project models real banking operations — account opening, loans, checkbooks, interest, and admin oversight — with secure PIN hashing, brute-force protection, JSON-based data persistence, and a modular package structure.
 
 ---
 
@@ -10,7 +10,7 @@ A console-based Bank Management System built with Python using Object-Oriented P
   * Secure Admin Login
   * Open New Account (auto-assigned account number, Savings/Current)
   * Close Account (blocked if balance, loan, or pending requests exist)
-  * Freeze / Unfreeze Account
+  * Freeze / Unfreeze Account (also clears a PIN-lockout on reactivation)
   * Manage Loan Requests (Approve / Reject)
   * Manage Checkbook Requests (Approve / Reject)
   * View Complete Bank Report (deposits, loans, transactions, per-account overview)
@@ -29,6 +29,7 @@ A console-based Bank Management System built with Python using Object-Oriented P
 
 * **Data & Security Features:**
   * SHA-256 PIN Hashing (no plaintext PINs stored)
+  * **3-Attempt PIN Lockout** — account automatically freezes after 3 consecutive incorrect PIN entries, and can only be reactivated by an admin
   * Persistent JSON Storage with backward-compatible loading (handles both legacy and current data formats)
   * Auto-generated Transaction Receipts (`.txt`, saved under `receipts/`)
   * Per-transaction limit (Rs. 100,000) and daily withdrawal limit (Rs. 200,000)
@@ -113,14 +114,25 @@ python main.py
 ------------------------------------------------------------
 ```
 
-### Customer Login & Menu
+### PIN Lockout in Action
 
 ```text
 Enter Account Number: 3012
-Enter 4-digit PIN: 4321
+Enter 4-digit PIN: 0000
+Login Failed: Incorrect PIN! Remaining attempts: 2
 
-Login Successful!
+Enter Account Number: 3012
+Enter 4-digit PIN: 0000
+Login Failed: Incorrect PIN! Remaining attempts: 1
 
+Enter Account Number: 3012
+Enter 4-digit PIN: 0000
+Login Failed: Account FROZEN due to 3 consecutive wrong PIN attempts! Contact Admin.
+```
+
+### Customer Menu
+
+```text
 ============================================================
                      Welcome Back, Abdullah
 ============================================================
@@ -167,7 +179,7 @@ Loan of Rs. 50,000.00 approved for Abdullah.
                  COMPREHENSIVE BANK FINANCIAL & ACTIVITY REPORT
 ================================================================================
 
------------------------------- GLOBAL FINANCIAL SUMMARY ------------------------
+---------------------------- GLOBAL FINANCIAL SUMMARY --------------------------
 Total Customers                : 10
 Active Accounts                : 9
 Frozen Accounts                : 1
@@ -177,11 +189,11 @@ Total Pending Loans Amount     : Rs. 0.00
 Pending Checkbook Requests     : 1
 Total System Transactions      : 34
 
-------------------------- ALL CUSTOMER ACCOUNTS OVERVIEW ----------------------
+------------------------ ALL CUSTOMER ACCOUNTS OVERVIEW ------------------------
 Acc No   Name            Type       Status     Balance        Active Loan
 --------------------------------------------------------------------------------
 3011     Ali             Savings    ACTIVE     Rs.15,188      Rs.0
-3012     Abdullah        Savings    ACTIVE     Rs.23,795      Rs.50,000
+3012     Abdullah        Savings    FROZEN     Rs.23,795      Rs.50,000
 ================================================================================
 ```
 
@@ -210,7 +222,7 @@ Current Balance: Rs. 28,795.00
 * **Object-Oriented Programming (OOP):** Class design and encapsulation (`BankAccount`, `BankManager`), with private attributes (`__balance`, `__pin_hash`) accessed only through class-defined methods.
 * **CRUD Operations:** Full account lifecycle — open, update (via transactions), close.
 * **JSON Data Serialization:** Persistent, backward-compatible storage via `to_dict()` / `from_dict()`, handling both legacy and current data formats safely.
-* **Security:** SHA-256 PIN hashing — no plaintext PINs are ever stored.
+* **Security:** SHA-256 PIN hashing (no plaintext PINs stored) and a 3-attempt lockout to slow down PIN-guessing.
 * **Business Logic & Validation:** Multi-step rules for withdrawals (per-transaction and daily limits, account-type-based minimum balance/overdraft), loans (eligibility, request-then-approve workflow), and account closure (blocked while pending requests exist).
 * **Admin/Customer Role Separation:** Distinct menus and permissions — customers manage their own account; admins manage the whole bank.
 * **Modules & Packages:** Code organized into a `src/` package (`models.py`, `manager.py`, `UI.py`), separating data, business logic, and presentation, with `main.py` as the entry point outside the package.
@@ -226,13 +238,19 @@ Current Balance: Rs. 28,795.00
 * Only on approval does a loan disburse funds (via a dedicated `receive_loan_disbursement()` method that keeps the balance update inside the `BankAccount` class) or a checkbook get marked `Approved`.
 * This mirrors how a real bank processes these requests — no self-service approval.
 
+## How the PIN Lockout Works
+
+* Every failed PIN attempt increments a per-account counter.
+* A correct PIN resets the counter to zero.
+* On the 3rd consecutive failure, the account is automatically frozen (same `is_active` flag admins use), the reason is recorded distinctly in the transaction log ("Account Frozen: 3 Failed PIN Attempts"), and the account can only be reactivated by an admin.
+* Reactivating an account via the Admin Panel also resets the failed-attempt counter to zero.
+
 ---
 
 ## Future Improvements
 
 * Salted password hashing (current hashing is unsalted)
 * Move admin credentials out of source code (environment variables or a config file)
-* Three-attempt PIN lock system
 * SQLite or PostgreSQL integration replacing JSON persistence
 * RESTful API backend (FastAPI/Flask)
 * Graphical User Interface (Tkinter)
@@ -248,7 +266,7 @@ This project helped me practice and solidify key software engineering concepts:
 * **Encapsulation in practice:** Keeping balance and PIN mutations strictly inside `BankAccount`, and catching (then fixing) a real bug where manager code briefly reached into a private attribute directly from outside the class.
 * **Designing approval workflows:** Separating "request" from "approval" for loans and checkbooks, closer to how real banking systems operate.
 * **Backward-compatible persistence:** Writing a `from_dict()` that safely loads both older and newer JSON formats without crashing.
-* **Business rule design:** Translating real-world constraints (overdraft limits, minimum balances, daily withdrawal caps) into validated code.
+* **Business rule design:** Translating real-world constraints (overdraft limits, minimum balances, daily withdrawal caps, brute-force lockouts) into validated code.
 * **Modular project structure:** Splitting a single-file project into a `models` / `manager` / `UI` / `main` package, and understanding why each piece of logic belongs where it does.
 
 ---
