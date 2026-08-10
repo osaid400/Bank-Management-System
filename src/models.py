@@ -158,11 +158,12 @@ class BankAccount:
 
     def change_pin(self, old_pin, new_pin):
         self.check_active_status()
-        if not self.verify_pin(old_pin):
-            raise ValueError("Incorrect current PIN!")
+        self.verify_pin(old_pin)
+
         new_pin_str = str(new_pin).strip().zfill(4)
         if not new_pin_str.isdigit() or len(new_pin_str) != 4:
             raise ValueError("PIN must be exactly 4 digits!")
+
         self.__pin_hash = self._hash_pin(new_pin_str)
         self.record_transaction("PIN Changed", 0)
 
