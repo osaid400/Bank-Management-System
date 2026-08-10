@@ -72,6 +72,9 @@ class BankManager:
 
     def toggle_account_status(self, account):
         account.is_active = not account.is_active
+        if account.is_active:
+            account.failed_attempts = 0
+            
         status_str = "Active" if account.is_active else "Frozen"
         account.record_transaction(f"Account Status Changed: {status_str}", 0)
         self.save_accounts()

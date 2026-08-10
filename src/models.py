@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 class BankAccount:
 
-    def __init__(self, name, account_number, balance, pin, account_type="Savings", loan_balance=0.0, pending_loan=0.0, transactions=None, checkbook_status="None", is_active=True, pin_is_hashed=False):
+    def __init__(self, name, account_number, balance, pin, account_type="Savings", loan_balance=0.0, pending_loan=0.0, transactions=None, checkbook_status="None", is_active=True, failed_attempts=0, pin_is_hashed=False):
         self.__balance = float(balance)
         self.name = name
         self.account_number = int(account_number)
@@ -12,6 +12,7 @@ class BankAccount:
         self.pending_loan = float(pending_loan)
         self.checkbook_status = checkbook_status
         self.is_active = is_active
+        self.failed_attempts = int(failed_attempts)
         self._transactions = transactions or []
 
         pin_str = str(pin).strip()
@@ -30,7 +31,20 @@ class BankAccount:
         return self.__balance
 
     def verify_pin(self, input_pin):
-        return self._hash_pin(input_pin) == self.__pin_hash
+        self.check_active_status()
+
+        if self._hash_pin(input_pin) == self.__pin_hash:
+            self.failed_attempts = 0
+            return True
+
+        self.failed_attempts += 1
+        if self.failed_attempts >= 3:
+            self.is_active = False
+            self.record_transaction("Account Frozen: 3 Failed PIN Attempts", 0)
+            raise ValueError("Account FROZEN due to 3 consecutive wrong PIN attempts! Contact Admin.")
+
+        remaining = 3 - self.failed_attempts
+        raise ValueError(f"Incorrect PIN! Remaining attempts: {remaining}")
 
     def check_active_status(self):
         if not self.is_active:
@@ -163,6 +177,7 @@ class BankAccount:
             "Pending_Loan": self.pending_loan,
             "Checkbook_Status": self.checkbook_status,
             "Is_Active": self.is_active,
+            "Failed_Attempts": self.failed_attempts,
             "Transactions": self._transactions
         }
 
@@ -174,6 +189,7 @@ class BankAccount:
             cb_status = "Pending" if account_data.get("Checkbook_Requested") else "None"
 
         is_active = account_data.get("Is_Active", True)
+        failed_attempts = account_data.get("Failed_Attempts", 0)
         raw_acc_type = account_data.get("Account_Type") or account_data.get("Account_type") or account_data.get("account_type", "Savings")
 
         if pin_hash:
@@ -188,6 +204,7 @@ class BankAccount:
                 transactions=account_data.get("Transactions") or account_data.get("transactions", []),
                 checkbook_status=cb_status,
                 is_active=is_active,
+                failed_attempts=failed_attempts,
                 pin_is_hashed=True
             )
         
@@ -203,6 +220,7 @@ class BankAccount:
             transactions=account_data.get("Transactions") or account_data.get("transactions", []),
             checkbook_status=cb_status,
             is_active=is_active,
+            failed_attempts=failed_attempts,
             pin_is_hashed=False
         )
 

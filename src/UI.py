@@ -311,11 +311,17 @@ def start_app(manager):
                 acc_num = int(input("Enter Account Number: "))
                 pin = input("Enter 4-digit PIN: ").strip()
                 acc = manager.find_account(acc_num)
-                if acc and acc.verify_pin(pin):
-                    print("Login Successful!")
-                    run_bank_menu(manager, acc)
+                if acc:
+                    try:
+                        if acc.verify_pin(pin):
+                            manager.save_accounts()
+                            print("Login Successful!")
+                            run_bank_menu(manager, acc)
+                    except ValueError as e:
+                        manager.save_accounts()
+                        print(f"Login Failed: {e}")
                 else:
-                    print("Invalid Account Number or PIN.")
+                    print("Invalid Account Number.")
             except ValueError:
                 print("Invalid input format.")
 
